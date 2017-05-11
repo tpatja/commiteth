@@ -4,7 +4,6 @@
             [secretary.core :as secretary]
             [goog.events :as events]
             [goog.history.EventType :as HistoryEventType]
-            [commiteth.ajax :refer [load-interceptors!]]
             [commiteth.handlers]
             [commiteth.subscriptions]
             [commiteth.activity :refer [activity-page]]
@@ -210,7 +209,6 @@
   (rf/dispatch-sync [:initialize-db])
   (when config/debug?
     (enable-re-frisk!))
-  (load-interceptors!)
   (hook-browser-navigation!)
   (load-data)
   (on-js-load))

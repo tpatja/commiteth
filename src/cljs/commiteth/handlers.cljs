@@ -19,11 +19,26 @@
  :http
  (fn [{:keys [method url on-success on-error finally params]}]
    (method url
-           {:headers {"Accept" "application/transit+json"}
+           {:headers {"Accept" "application/transit+json"
+                      "x-csrf-token" js/csrfToken}
             :handler on-success
             :error-handler on-error
             :finally finally
             :params  params})))
+
+
+(reg-fx
+ :github-api-request
+ (fn [{:keys [method path on-success on-error finally params headers token]}]
+   (method (str "https://api.github.com" path)
+           {:headers (merge headers
+                            {"Accept" "application/vnd.github.v3+json"
+                             "Authorization" (str  "token " token)})
+            :handler on-success
+            :error-handler on-error
+            :finally finally
+            :params  params})))
+
 (reg-fx
  :delayed-dispatch
  (fn [{:keys [args timeout]}]
@@ -228,6 +243,22 @@
                       :on-error   #(dispatch [:set-flash-message
                                               :error "Failed to load repositories"])
                       :finally    #(dispatch [:clear-repos-loading])}})))))
+
+(reg-event-fx
+ :load-user-repos-cljs
+ (fn [{:keys [db]} [_]]
+   (let [token (get-admin-token db)]
+     (println "token=" token)
+     (when token
+       (conj  {:db  db}
+              {:github-api-request-test {:method     GET
+                                         :path        "/user/repos"
+                                         :token token
+                                         :on-success #(println %) ;; TODO: select-keys + add enabled param
+                                         :on-error   #(println %)
+                                         :finally    #(dispatch [:set-flash-message
+                                                                 :error "Failed to load repositories"])}})))))
+
 
 
 (defn update-repo-state [all-repos full-name data]
